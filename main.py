@@ -20,15 +20,16 @@ class OnMyWatch:
         self.observer.schedule(event_handler, self.watchDirectory)
         self.observer.start()
         try:
-            while True:
-                time.sleep(5)
-        except:
+            while self.observer.isAlive():
+                self.observer.join(5)
+        except KeyboardInterrupt:
+            # user requested stop
+            pass
+        finally:
             self.observer.stop()
+            self.observer.join()
             print("Observer Stopped")
-  
-        self.observer.join()
-  
-  
+
 class Handler(FileSystemEventHandler):
   
     @staticmethod
