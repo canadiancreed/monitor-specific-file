@@ -38,15 +38,10 @@ class Handler(FileSystemEventHandler):
   
     def on_any_event(self, event):
 
-        if event.event_type == 'created' and self.target_filename in event.src_path:
+        if event.event_type == 'created' or event.event_type == 'closed' and self.target_filename in event.src_path:
             self.s3.upload_file(event.src_path, self.bucket_name, self.target_filename)
-            print("Watchdog received created event - % s." % event.src_path)
-        elif event.event_type == 'modified' and self.target_filename in event.src_path:
-            self.s3.upload_file(event.src_path, self.bucket_name, self.target_filename)
-            print("Watchdog received modified event - % s." % event.src_path)
-        else:
-            return None
-              
+            print("Watchdog received %s event - %s." % (event.event_type, event.src_path))
+
   
 if __name__ == '__main__':
 
