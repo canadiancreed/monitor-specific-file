@@ -5,19 +5,18 @@ import sys
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
   
-s3_bucket_name = ""
-filename = ""
-  
 class OnMyWatch:
     # Set the directory on watch
     watchDirectory = "e:/Code/indellinent/test/"
   
-    def __init__(self):
+    def __init__(self, handlers):
         self.observer = Observer()
-  
+        self.handlers = handlers
+
     def run(self):
-        event_handler = Handler()
-        self.observer.schedule(event_handler, self.watchDirectory)
+        for handler in self.handlers:
+            self.observer.schedule(handler, self.watchDirectory)
+
         self.observer.start()
         try:
             while self.observer.isAlive():
@@ -31,28 +30,19 @@ class OnMyWatch:
             print("Observer Stopped")
 
 class Handler(FileSystemEventHandler):
+
+    def __init__(self, s3_client, bucket_name, target_filename):
+        self.s3 = s3_client
+        self.bucket_name = bucket_name
+        self.target_filename = target_filename
   
     def on_any_event(self, event):
 
-        if event.event_type == 'created' and filename in event.src_path :
-            s3 = boto3.client(
-                's3',
-                region_name = os.environ['AWS_REGION'],
-                aws_access_key_id = os.environ['AWS_ACCESS_KEY_ID'],
-                aws_secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY']            
-            )
-
-            s3.upload_file(event.src_path, s3_bucket_name, filename)
+        if event.event_type == 'created' and self.target_filename in event.src_path:
+            self.s3.upload_file(event.src_path, self.bucket_name, self.target_filename)
             print("Watchdog received created event - % s." % event.src_path)
-        elif event.event_type == 'modified' and filename in event.src_path :
-            s3 = boto3.client(
-                's3',
-                region_name = os.environ['AWS_REGION'],
-                aws_access_key_id = os.environ['AWS_ACCESS_KEY_ID'],
-                aws_secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY']            
-            )
-            
-            s3.upload_file(event.src_path, s3_bucket_name, filename)
+        elif event.event_type == 'modified' and self.target_filename in event.src_path:
+            self.s3.upload_file(event.src_path, self.bucket_name, self.target_filename)
             print("Watchdog received modified event - % s." % event.src_path)
         else:
             return None
@@ -60,9 +50,12 @@ class Handler(FileSystemEventHandler):
   
 if __name__ == '__main__':
 
-    #Set global variables as data that's passed from command line
     s3_bucket_name = sys.argv[1]
     filename = sys.argv[2]
 
-    watch = OnMyWatch()
+    s3 = boto3.client("s3")
+
+    test_handler = Handler(s3, s3_bucket_name, filename)
+
+    watch = OnMyWatch([test_handler])
     watch.run()
