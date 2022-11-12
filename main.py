@@ -1,7 +1,5 @@
-import os
-import time
 import boto3
-import sys
+
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
   
@@ -44,9 +42,18 @@ class Handler(FileSystemEventHandler):
 
   
 if __name__ == '__main__':
+    import argparse
 
-    s3_bucket_name = sys.argv[1]
-    filename = sys.argv[2]
+    parser = argparse.ArgumentParser(
+        prog="monitor-specific-file",
+        description="Monitor a specific file, and upload it to a specific s3 bucket",
+    )
+    parser.add_argument('s3_bucket_name')
+    parser.add_argument('filename')
+    args = parser.parse_args()
+
+    s3_bucket_name = args.s3_bucket_name
+    filename = args.filename
 
     s3 = boto3.client("s3")
 
