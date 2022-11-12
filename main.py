@@ -32,8 +32,7 @@ class OnMyWatch:
 
 class Handler(FileSystemEventHandler):
   
-    @staticmethod
-    def on_any_event(event):
+    def on_any_event(self, event):
 
         if event.event_type == 'created' and filename in event.src_path :
             s3 = boto3.client(
